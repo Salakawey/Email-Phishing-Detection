@@ -1,0 +1,13 @@
+# Ignore the virtual environment completely
+venv/
+.venv/
+env/
+
+# Ignore Python runtime cache files
+__pycache__/
+*.pyc
+
+# Ignore only the heavy deep learning weight files inside your model folder
+my_saved_model/*.safetensors
+my_saved_model/*.bin
+my_saved_model/*.h5

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Phishing Guard</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <h1>AI Phishing Email Detector</h1>
+            <p>DEPI Graduation Project Portal</p>
+        </header>
+
+        <main class="main-content">
+            <label for="emailInput">Paste Email Content to Analyze:</label>
+            <textarea id="emailInput" placeholder="Paste the full body or subject of the suspicious email here..."></textarea>
+            
+            <button id="scanBtn" onclick="sendToClassifier()">Scan Email Content</button>
+
+            <div id="resultsCard" class="card hidden">
+                <h2>Verdict: <span id="verdictText">--</span></h2>
+                <div class="metrics">
+                    <p>Phishing Probability: <strong id="phishBar">0%</strong></p>
+                    <p>Safe Probability: <strong id="safeBar">0%</strong></p>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="/static/app.js"></script>
+</body>
+</html>
