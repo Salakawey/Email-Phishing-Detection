@@ -10,8 +10,7 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification
 app = FastAPI(title="AI Phishing Detection System")
 
 # --- ROBUST PATH CALCULATION FOR YOUR AI MODEL ---
-CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-MODEL_PATH = os.path.join(CURRENT_DIR, "my_saved_model")
+MODEL_PATH = "Salakawey/Email-Phishing-DistilBERT"
 
 print(f"Targeting model folder at: {MODEL_PATH}")
 print("Loading Fine-Tuned Deep Learning Model... Please wait...")
