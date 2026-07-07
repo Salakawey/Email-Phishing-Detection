@@ -5,29 +5,74 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Phishing Guard</title>
     <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
     <div class="app-container">
         <header>
-            <h1>AI Phishing Email Detector</h1>
-            <p>DEPI Graduation Project Portal</p>
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-shield-alt"></i>
+                    <h1>PhishGuard AI</h1>
+                </div>
+                <p class="tagline">Advanced DistilBERT-Powered Phishing Detection</p>
+            </div>
         </header>
 
         <main class="main-content">
-            <label for="emailInput">Paste Email Content to Analyze:</label>
-            <textarea id="emailInput" placeholder="Paste the full body or subject of the suspicious email here..."></textarea>
+            <div class="input-section">
+                <label for="emailInput">
+                    <i class="fas fa-envelope"></i> 
+                    Paste Email Content to Analyze
+                </label>
+                <textarea id="emailInput" 
+                          placeholder="Paste the full email body, subject, or suspicious content here..."></textarea>
+            </div>
             
-            <button id="scanBtn" onclick="sendToClassifier()">Scan Email Content</button>
+            <button id="scanBtn" onclick="sendToClassifier()">
+                <i class="fas fa-bolt"></i> 
+                <span>Scan with AI</span>
+            </button>
 
-            <div id="resultsCard" class="card hidden">
-                <h2>Verdict: <span id="verdictText">--</span></h2>
-                <div class="metrics">
-                    <p>Phishing Probability: <strong id="phishBar">0%</strong></p>
-                    <p>Safe Probability: <strong id="safeBar">0%</strong></p>
+            <div id="resultsCard" class="results-card hidden">
+                <div class="verdict-header">
+                    <h2>Verdict: <span id="verdictText" class="verdict-value">--</span></h2>
+                    <div id="verdictIcon" class="verdict-icon"></div>
                 </div>
+                
+                <div class="probability-container">
+                    <div class="prob-bar">
+                        <div class="label">
+                            <span class="danger">Phishing</span>
+                            <span id="phishBar" class="value">0%</span>
+                        </div>
+                        <div class="bar-bg">
+                            <div id="phishProgress" class="progress-bar danger-bar"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="prob-bar">
+                        <div class="label">
+                            <span class="safe">Safe</span>
+                            <span id="safeBar" class="value">0%</span>
+                        </div>
+                        <div class="bar-bg">
+                            <div id="safeProgress" class="progress-bar safe-bar"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button id="resetBtn" onclick="resetAnalysis()" class="reset-btn">
+                    <i class="fas fa-redo"></i> Analyze Another Email
+                </button>
             </div>
         </main>
+
+        <footer>
+            <p>DEPI Graduation Project • Powered by DistilBERT</p>
+        </footer>
     </div>
+
     <script src="/static/app.js"></script>
 </body>
 </html>

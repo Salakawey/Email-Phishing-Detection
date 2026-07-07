@@ -1,50 +1,95 @@
 async function sendToClassifier() {
-    const textInput = document.getElementById("emailInput").value;
+    const textInput = document.getElementById("emailInput").value.trim();
     const btn = document.getElementById("scanBtn");
     const resultsCard = document.getElementById("resultsCard");
     const verdictText = document.getElementById("verdictText");
+    const phishBar = document.getElementById("phishBar");
+    const safeBar = document.getElementById("safeBar");
+    const phishProgress = document.getElementById("phishProgress");
+    const safeProgress = document.getElementById("safeProgress");
+    const verdictIcon = document.getElementById("verdictIcon");
 
-    // Block empty entries
-    if (!textInput.trim()) {
-        alert("Please paste some text content before scanning.");
+    if (!textInput) {
+        alert("⚠️ Please paste email content before scanning.");
         return;
     }
 
-    // Update UI button state to loading
-    btn.innerText = "Analyzing Context via Server...";
+    // Loading state
+    const originalBtnText = btn.innerHTML;
+    btn.innerHTML = `
+        <i class="fas fa-spinner fa-spin"></i> 
+        <span>Analyzing with AI...</span>
+    `;
     btn.disabled = true;
 
     try {
-        // Send a POST request containing the email text payload to FastAPI
         const response = await fetch("/api/predict", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ text: textInput })
         });
 
+        if (!response.ok) {
+            throw new Error("Server responded with error");
+        }
+
         const data = await response.json();
 
-        // Clear previous alert designs
-        resultsCard.classList.remove("hidden", "danger-verdict", "safe-verdict");
+        // Show results
+        resultsCard.classList.remove("hidden");
         
-        // Populate layout fields with response metadata
         verdictText.innerText = data.prediction;
-        document.getElementById("phishBar").innerText = data.phishing_probability;
-        document.getElementById("safeBar").innerText = data.safe_probability;
+        
+        const phishPct = parseFloat(data.phishing_probability);
+        const safePct = parseFloat(data.safe_probability);
 
-        // Apply color based on threat analysis verdict
+        phishBar.innerText = data.phishing_probability;
+        safeBar.innerText = data.safe_probability;
+
+        // Animate progress bars
+        phishProgress.style.width = '0%';
+        safeProgress.style.width = '0%';
+
+        // Trigger reflow
+        void phishProgress.offsetWidth;
+
+        phishProgress.style.width = `${phishPct}%`;
+        safeProgress.style.width = `${safePct}%`;
+
+        // Set verdict styling and icon
+        resultsCard.classList.remove("danger-verdict", "safe-verdict");
+        
         if (data.prediction === "Phishing") {
             resultsCard.classList.add("danger-verdict");
+            verdictIcon.innerHTML = `<i class="fas fa-exclamation-triangle" style="color: #f87171;"></i>`;
         } else {
             resultsCard.classList.add("safe-verdict");
+            verdictIcon.innerHTML = `<i class="fas fa-shield-alt" style="color: #34d399;"></i>`;
         }
 
     } catch (err) {
         console.error(err);
-        alert("Could not connect to the FastAPI backend framework.");
+        alert("❌ Could not connect to the AI backend. Make sure the server is running.");
     } finally {
-        // Reset button state
-        btn.innerText = "Scan Email Content";
+        // Reset button
+        btn.innerHTML = originalBtnText;
         btn.disabled = false;
     }
 }
+
+function resetAnalysis() {
+    const resultsCard = document.getElementById("resultsCard");
+    const emailInput = document.getElementById("emailInput");
+    
+    resultsCard.classList.add("hidden");
+    emailInput.value = "";
+    emailInput.focus();
+}
+
+// Allow pressing Enter in textarea to scan (Ctrl+Enter)
+document.addEventListener('keydown', function(e) {
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        sendToClassifier();
+    }
+});

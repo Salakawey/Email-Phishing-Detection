@@ -1,68 +1,108 @@
 import os
-import torch
-from fastapi import FastAPI
+import logging
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
+import torch
 
-# Initialize the FastAPI app
-app = FastAPI(title="AI Phishing Detection System")
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-# --- ROBUST PATH CALCULATION FOR YOUR AI MODEL ---
+# Initialize FastAPI
+app = FastAPI(
+    title="AI Phishing Guard",
+    description="Professional AI-Powered Email Phishing Detection System",
+    version="1.0.0"
+)
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, restrict to specific domains
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# --- Robust Model Loading ---
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = "Salakawey/Email-Phishing-DistilBERT"
 
-print(f"Targeting model folder at: {MODEL_PATH}")
-print("Loading Fine-Tuned Deep Learning Model... Please wait...")
+logger.info(f"Loading model from: {MODEL_PATH}")
 
 try:
-    # Load your custom DistilBERT brain from your local folder
     tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
     model = AutoModelForSequenceClassification.from_pretrained(MODEL_PATH)
-    model.eval()  # Put the model in evaluation mode (turns off dropout layers)
-    print("Model loaded successfully! AI engine is ready.")
+    model.eval()
+    logger.info("✅ Model loaded successfully!")
 except Exception as e:
-    print(f"\nCRITICAL ERROR LOADING MODEL PATH: {e}")
-    print("Please check if the 'my_saved_model' folder is sitting right next to main.py\n")
+    logger.error(f"❌ Failed to load model: {e}")
+    tokenizer = None
+    model = None
 
-# Define data structure for incoming requests
+# Request model
 class EmailPayload(BaseModel):
     text: str
 
-# 1. UPDATED REAL AI ENDPOINT
 @app.post("/api/predict")
 async def predict_email(payload: EmailPayload):
-    if not payload.text.strip():
-        return {"error": "Email text cannot be empty."}
-    
-    # Run the user's text through your custom DistilBERT tokenizer
-    inputs = tokenizer(payload.text, return_tensors="pt", padding=True, truncation=True, max_length=256)
-    
-    # Calculate predictions safely using PyTorch without calculating gradients
-    with torch.no_grad():
-        outputs = model(**inputs)
-        logits = outputs.logits
-        probabilities = torch.softmax(logits, dim=1).flatten().tolist()
-    
-    # Convert probability matrix decimals to clean percentages
-    safe_score = round(probabilities[0] * 100, 2)
-    phishing_score = round(probabilities[1] * 100, 2)
-    
-    # Set the threshold classification verdict
-    prediction_result = "Phishing" if phishing_score > safe_score else "Safe"
-    
+    if not payload.text or not payload.text.strip():
+        raise HTTPException(status_code=400, detail="Email text cannot be empty.")
+
+    if model is None or tokenizer is None:
+        raise HTTPException(status_code=503, detail="Model not loaded. Service unavailable.")
+
+    try:
+        # Tokenize
+        inputs = tokenizer(
+            payload.text,
+            return_tensors="pt",
+            padding=True,
+            truncation=True,
+            max_length=256
+        )
+
+        # Inference
+        with torch.no_grad():
+            outputs = model(**inputs)
+            logits = outputs.logits
+            probabilities = torch.softmax(logits, dim=1).flatten().tolist()
+
+        safe_score = round(probabilities[0] * 100, 2)
+        phishing_score = round(probabilities[1] * 100, 2)
+
+        prediction_result = "Phishing" if phishing_score > safe_score else "Safe"
+
+        return {
+            "prediction": prediction_result,
+            "phishing_probability": f"{phishing_score}%",
+            "safe_probability": f"{safe_score}%",
+            "confidence": max(safe_score, phishing_score)
+        }
+
+    except Exception as e:
+        logger.error(f"Prediction error: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error during prediction.")
+
+# Health check
+@app.get("/health")
+async def health():
     return {
-        "prediction": prediction_result,
-        "phishing_probability": f"{phishing_score}%",
-        "safe_probability": f"{safe_score}%"
+        "status": "healthy",
+        "model_loaded": model is not None
     }
 
-# 2. Host our static frontend files
+# Serve static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# 3. Serve the index.html page reliably
+# Serve index
 @app.get("/")
 async def read_index():
     html_file_path = os.path.join(CURRENT_DIR, "static", "index.html")
+    if not os.path.exists(html_file_path):
+        raise HTTPException(status_code=404, detail="Frontend not found.")
     return FileResponse(html_file_path)
