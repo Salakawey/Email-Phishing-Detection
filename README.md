@@ -1,6 +1,6 @@
 ---
 title: Email Phishing Detector App
-emoji: shield
+emoji: ???
 colorFrom: blue
 colorTo: red
 sdk: docker
